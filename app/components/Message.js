@@ -13,30 +13,37 @@ marked.setOptions({
 const splitText = (text) => {
   const result = [];
   const lines = text.split('\n');
+  let isErrored = false;
   let inCodeBlock = false;
   let codeBlockLines = [];
 
   lines.forEach(line => {
-    if (line.startsWith('```')) {
-      if (inCodeBlock) {
-        // End of code block
-        inCodeBlock = false;
+    try{
+      if (line.startsWith('```')) {
+        if (inCodeBlock) {
+          // End of code block
+          inCodeBlock = false;
+          codeBlockLines.push(line);
+          result.push(codeBlockLines.join('\n'));
+          codeBlockLines = [];
+        } else {
+          // Start of code block
+          inCodeBlock = true;
+          codeBlockLines.push(line);
+        }
+      } else if (inCodeBlock) {
+        // Inside code block
         codeBlockLines.push(line);
-        result.push(codeBlockLines.join('\n'));
-        codeBlockLines = [];
       } else {
-        // Start of code block
-        inCodeBlock = true;
-        codeBlockLines.push(line);
+        // Regular line
+        if (line.trim().length > 0) {
+          result.push(line);
+        }
       }
-    } else if (inCodeBlock) {
-      // Inside code block
-      codeBlockLines.push(line);
-    } else {
-      // Regular line
-      if (line.trim().length > 0) {
-        result.push(line);
-      }
+    }
+    catch(e){
+      isErrored = true;
+      console.error(e);
     }
   });
 
@@ -52,6 +59,10 @@ const Message = ({ message, isUser }) => {
 
   if (Array.isArray(message)) {
     message = message.join("");
+  }
+  
+  if(isErrored){
+    message = "An error has occurred while parsing your request";
   }
 
   if (!message || message === "") {
